@@ -98,26 +98,35 @@ public class OrdersController {
 
             // Ship
             String customerId = parseId(customerFuture.get(timeout, TimeUnit.SECONDS).getId().getHref());
-            Future<Shipment> shipmentFuture = asyncGetService.postResource(config.getShippingUri(), new Shipment
-                    (customerId), new ParameterizedTypeReference<Shipment>() {
-            });
+            try {
+                Future<Shipment> shipmentFuture = asyncGetService.postResource(config.getShippingUri(), new Shipment
+                        (customerId), new ParameterizedTypeReference<Shipment>() {
+                });
 
-            CustomerOrder order = new CustomerOrder(
-                    null,
-                    customerId,
-                    customerFuture.get(timeout, TimeUnit.SECONDS).getContent(),
-                    addressFuture.get(timeout, TimeUnit.SECONDS).getContent(),
-                    cardFuture.get(timeout, TimeUnit.SECONDS).getContent(),
-                    itemsFuture.get(timeout, TimeUnit.SECONDS),
-                    shipmentFuture.get(timeout, TimeUnit.SECONDS),
-                    Calendar.getInstance().getTime(),
-                    amount);
-            LOG.debug("Received data: " + order.toString());
+                CustomerOrder order = new CustomerOrder(
+                        null,
+                        customerId,
+                        customerFuture.get(timeout, TimeUnit.SECONDS).getContent(),
+                        addressFuture.get(timeout, TimeUnit.SECONDS).getContent(),
+                        cardFuture.get(timeout, TimeUnit.SECONDS).getContent(),
+                        itemsFuture.get(timeout, TimeUnit.SECONDS),
+                        shipmentFuture.get(timeout, TimeUnit.SECONDS),
+                        Calendar.getInstance().getTime(),
+                        amount);
+                LOG.debug("Received data: " + order.toString());
 
-            CustomerOrder savedOrder = customerOrderRepository.save(order);
-            LOG.debug("Saved order: " + savedOrder);
+                CustomerOrder savedOrder = customerOrderRepository.save(order);
+                LOG.debug("Saved order: " + savedOrder);
 
-            return savedOrder;
+                return savedOrder;
+            } catch (TimeoutException e) {
+                throw new ShipmentFailedException("Shipment service timed out; please try again later.", e);
+            } catch (ExecutionException e) {
+                if (e.getCause() instanceof SomeSpecificShipmentException) {
+                    throw new ShipmentFailedException("Shipment service is currently unavailable.", e);
+                }
+                throw new IllegalStateException("Unable to create order due to unspecified IO error.", e);
+            }
         } catch (TimeoutException e) {
             throw new IllegalStateException("Unable to create order due to timeout from one of the services.", e);
         } catch (InterruptedException | IOException | ExecutionException e) {
@@ -170,6 +179,13 @@ public class OrdersController {
     public class InvalidOrderException extends IllegalStateException {
         public InvalidOrderException(String s) {
             super(s);
+        }
+    }
+
+    @ResponseStatus(value = HttpStatus.SERVICE_UNAVAILABLE)
+    public class ShipmentFailedException extends IllegalStateException {
+        public ShipmentFailedException(String message, Throwable cause) {
+            super(message, cause);
         }
     }
 }
