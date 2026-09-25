@@ -4,6 +4,7 @@ import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 
 import javax.validation.constraints.NotNull;
+import java.util.Objects;
 
 @Document
 public class Item {
@@ -64,10 +65,13 @@ public class Item {
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
-
         Item item = (Item) o;
+        return Objects.equals(itemId, item.itemId);
+    }
 
-        return itemId != null ? itemId.equals(item.itemId) : item.itemId == null;
+    @Override
+    public int hashCode() {
+        return Objects.hash(itemId);
     }
 
     // ****** Crappy getter/setters for Jackson JSON invoking ********
