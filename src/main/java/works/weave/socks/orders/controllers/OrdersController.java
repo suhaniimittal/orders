@@ -122,6 +122,11 @@ public class OrdersController {
             throw new IllegalStateException("Unable to create order due to timeout from one of the services.", e);
         } catch (InterruptedException | IOException | ExecutionException e) {
             throw new IllegalStateException("Unable to create order due to unspecified IO error.", e);
+        } catch (ExecutionException e) {
+            if (e.getCause() instanceof ShipmentFailedException) {
+                throw new ShipmentFailedException("Shipment service is currently unavailable.", e);
+            }
+            throw new IllegalStateException("Unable to create order due to unspecified IO error.", e);
         }
     }
 
@@ -133,23 +138,6 @@ public class OrdersController {
         }
         return matcher.group(0);
     }
-
-//    TODO: Add link to shipping
-//    @RequestMapping(method = RequestMethod.GET, value = "/orders")
-//    public @ResponseBody
-//    ResponseEntity<?> getOrders() {
-//        List<CustomerOrder> customerOrders = customerOrderRepository.findAll();
-//
-//        Resources<CustomerOrder> resources = new Resources<>(customerOrders);
-//
-//        resources.forEach(r -> r);
-//
-//        resources.add(linkTo(methodOn(ShippingController.class, CustomerOrder.getShipment::ge)).withSelfRel());
-//
-//        // add other links as needed
-//
-//        return ResponseEntity.ok(resources);
-//    }
 
     private float calculateTotal(List<Item> items) {
         float amount = 0F;
@@ -170,6 +158,13 @@ public class OrdersController {
     public class InvalidOrderException extends IllegalStateException {
         public InvalidOrderException(String s) {
             super(s);
+        }
+    }
+
+    @ResponseStatus(value = HttpStatus.SERVICE_UNAVAILABLE)
+    public class ShipmentFailedException extends Exception {
+        public ShipmentFailedException(String message, Throwable cause) {
+            super(message, cause);
         }
     }
 }
