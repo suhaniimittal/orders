@@ -122,6 +122,13 @@ public class OrdersController {
             throw new IllegalStateException("Unable to create order due to timeout from one of the services.", e);
         } catch (InterruptedException | IOException | ExecutionException e) {
             throw new IllegalStateException("Unable to create order due to unspecified IO error.", e);
+        } catch (TimeoutException e) {
+            throw new ShipmentFailedException("Shipment service timed out; please try again later.", e);
+        } catch (ExecutionException e) {
+            if (e.getCause() instanceof SomeSpecificShipmentException) {
+                throw new ShipmentFailedException("Shipment service is currently unavailable.", e);
+            }
+            throw new IllegalStateException("Unable to create order due to unspecified IO error.", e);
         }
     }
 
@@ -170,6 +177,13 @@ public class OrdersController {
     public class InvalidOrderException extends IllegalStateException {
         public InvalidOrderException(String s) {
             super(s);
+        }
+    }
+
+    @ResponseStatus(value = HttpStatus.SERVICE_UNAVAILABLE)
+    public class ShipmentFailedException extends RuntimeException {
+        public ShipmentFailedException(String message, Throwable cause) {
+            super(message, cause);
         }
     }
 }
