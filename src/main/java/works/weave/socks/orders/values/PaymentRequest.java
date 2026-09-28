@@ -9,16 +9,18 @@ public class PaymentRequest {
     private Card card;
     private Customer customer;
     private float amount;
+    private String currency;
 
     // For jackson
     public PaymentRequest() {
     }
 
-    public PaymentRequest(Address address, Card card, Customer customer, float amount) {
+    public PaymentRequest(Address address, Card card, Customer customer, float amount, String currency) {
         this.address = address;
         this.customer = customer;
         this.card = card;
         this.amount = amount;
+        this.currency = currency;
     }
 
     @Override
@@ -27,6 +29,8 @@ public class PaymentRequest {
                 "address=" + address +
                 ", card=" + card +
                 ", customer=" + customer +
+                ", amount=" + amount +
+                ", currency='" + currency + '\'' +
                 '}';
     }
 
@@ -60,5 +64,13 @@ public class PaymentRequest {
 
     public void setAmount(float amount) {
         this.amount = amount;
+    }
+
+    public String getCurrency() {
+        return currency;
+    }
+
+    public void setCurrency(String currency) {
+        this.currency = currency;
     }
 }
